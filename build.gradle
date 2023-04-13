@@ -1,0 +1,201 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
+// Groovy文法
+
+// #### 3.1.1 文字列
+// シングルクォート
+String sqName = 'hoge'
+println(sqName)
+// ダブルクォート
+String dqTitle = "Projefct: ${project.name}"
+String dqTitle2 = "Projefct: $project.name" // 中括弧は省略可能
+println(dqTitle)
+println(dqTitle2)
+/*
+- シングルクォート：Javaの文字列とほぼ同等の利用方法
+- ダブルクォート：文字列の内部に$記号で動的な内容を埋め込むことができる。内部的には、GroovyのGStringというクラスが使われる
+ */
+// 複数行シングルクォート
+String multiLine = '''**********
+* Hello *
+**********
+'''
+println(multiLine)
+// 複数行シングルクォート
+String multiLine2 = """**********
+* Hello2 *
+**********
+"""
+println(multiLine2)
+
+// #### 3.1.2 メソッド呼び出し時のカッコ省略
+// どちらでもいいよという説明　引数がない場合はカッコを省略できない！
+println('Hello World!!')
+println 'Hello World!!'
+
+// #### 3.1.3 defによる型指定の省略
+// 型を指定した変数定義
+String name313 = 'John'
+// 型を省略下変数定義
+def name313_1 = 'John'
+
+// Javaにおいて、Object型を指定した場合と同等になる
+// ただし、Groovyの場合はダックタイピングの機能があるため、型としてdefを指定した場合でもオブジェクトのメソッドやプロパティは参照できる
+// ※「もしもそれがアヒルのように歩き、アヒルのように泣くなら、それはアヒルである」と説明されることからダックタイピングと呼ばれる
+
+// #### 3.1.4 クロージャ
+
+//Groovyは言語機能としてクロージャを提供している
+//Java8で導入されたラムダや、他のプログラム言語で言うところの関数オブジェクトのようなものと理解しておいて
+
+//クロージャは中括弧を利用して定義し、<クロージャ名>.call()または、通常のメソッド呼び出しと同様に<クロージャ名>()で実行できる
+
+// クロージャ定義
+def clos1 = { mes -> println "Hi, $mes" }
+// 引数と省略した場合は、暗黙引数itを利用
+def clos2 = { println "Hi, $it" }
+
+// クロージャ実行
+clos1.call('John')
+clos2('Bob')
+// メソッド呼び出しと同様にカッコ省略可能
+clos2 'Alice'
+
+// - Gradleはクロージャを多用しており、例えば次のようなタスク定義はクロージャによって実現されている
+
+//task hello2 << {
+//    println 'Hello Gradle world!'
+//}
+
+// 上記を個別に定義した場合は下記のようになる
+
+// タスクへ追加する処理をクロージャとして定義
+def clos3 = { println 'Hello Gradle world!' }
+
+// タスクを定義
+task hello {
+    println "hello!!"
+}
+// タスクにクロージャを追加
+// << は leftShift()の省略形なので以下と等価
+//hello.leftShift(clos3)
+
+task hello2 doLast {
+    println 'Hello Gradle world!'
+}
+task hello3 doLast {
+    println 'Hello Gradle world!(hello2)'
+}
+/**
+ * - MEMO: Gradle3以降ぐらいから、leftShiftが非推奨になりつかなくなった様子
+ * - 代わりにdoLastを使うのだとか<https://qiita.com/ossan_pg/items/608134f44ccf4542edf2>
+ */
+
+
+
+
+// #### 3.2.3 組み込みタスク
+
+/*
+Gradleはビルドスクリプトで特に何も指定していなくても利用可能なタスクを提供している
+これらのタスクのことを「組み込みタスク（built-in tasks）」と呼びます
+タスクの一覧はgradle tasks で確認できる
+
+```gradle
+E:\XXX_POKET\020_資格・学習\JAVA\20200613_Gradle徹底入門\practice\chap3>gradle tasks
+
+> Task :tasks
+
+------------------------------------------------------------
+Tasks runnable from root project
+------------------------------------------------------------
+
+Build Setup tasks
+-----------------
+init - Initializes a new Gradle build.
+wrapper - Generates Gradle wrapper files.
+
+Help tasks
+----------
+buildEnvironment - Displays all buildscript dependencies declared in root project 'chap3'.
+components - Displays the components produced by root project 'chap3'. [incubating]
+dependencies - Displays all dependencies declared in root project 'chap3'.
+dependencyInsight - Displays the insight into a specific dependency in root project 'chap3'.
+dependentComponents - Displays the dependent components of components in root project 'chap3'. [incubating]
+help - Displays a help message.
+model - Displays the configuration model of root project 'chap3'. [incubating]
+projects - Displays the sub-projects of root project 'chap3'.
+properties - Displays the properties of root project 'chap3'.
+tasks - Displays the tasks runnable from root project 'chap3'.
+
+To see all tasks and more detail, run gradle tasks --all
+
+To see more detail about a task, run gradle help --task <task>
+
+BUILD SUCCESSFUL in 1s
+1 actionable task: 1 executed
+
+```
+
+- initタスクは「Build Setup tasks」に属しており、ビルドの初期化を行うタスクであるということが読み取れます
+- プラグインを追加することで利用できるタスクも追加されるので、gradle tasksで利用できるタスクを一覧で見れるということを覚えておく
+
+また、よく使う組み込みタスクとして、`gradle properties`がある
+これはGradleのビルドスクリプトに定義されているプログラムの一覧を表示するタスク
+
+ */
+
+
+// #### 3.2.4 主要なコマンドラインオプション
+/*
+エラー調査の際に役立つオプション
+
+- ログ出力量の少ない順にGradleのコマンドラインオプションを並べると次のようになる
+  - `-i (--info)`
+    - ログレベルがINFOになり、ビルドスクリプトのファイル名などの情報が表示されるようになる
+  - `-s (--stacktrace)`
+    - 例外発生時にユーザー例外部分のみスタックトレースを表示
+  - `-S (--full-stacktrace)`
+    - 例外発生時にすべてのスタックトレースを表示
+  - `-d (--debug)`
+    - ログレベルがDEBUGに設定され、非常に詳細な情報が表示される様になる
+
+- デフォルトの`build.gradle`ファイル以外のファイル名のビルドスクリプトを指定する場合
+  - `gradle -b build-new.gradle`
+
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
